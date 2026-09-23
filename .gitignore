@@ -8,6 +8,8 @@
 .utmp/
 /[Ll]ibrary/
 /[Tt]emp/
+/DinoEscapeSlop/Library/
+/DinoEscapeSlop/Temp/
 /[Oo]bj/
 /[Bb]uild/
 /[Bb]uilds/
