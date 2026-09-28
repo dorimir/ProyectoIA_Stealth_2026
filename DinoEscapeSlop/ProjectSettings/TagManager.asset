@@ -4,7 +4,7 @@
 TagManager:
   serializedVersion: 3
   tags:
-  - isInteractive
+  - canPickUp
   layers:
   - Default
   - TransparentFX
@@ -14,7 +14,7 @@ TagManager:
   - UI
   - 
   - 
-  - 
+  - holdLayer
   - 
   - 
   - 

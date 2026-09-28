@@ -1,143 +1,196 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
 public class PickUpScript : MonoBehaviour
 {
-    public GameObject player;
+    [Header("Referencias")]
     public Transform holdPos;
-    //if you copy from below this point, you are legally required to like the video
-    public float throwForce = 500f; //force at which the object is thrown at
-    public float pickUpRange = 5f; //how far the player can pickup the object from
-    private float rotationSensitivity = 1f; //how fast/slow the object is rotated in relation to mouse movement
-    private GameObject heldObj; //object which we pick up
-    private Rigidbody heldObjRb; //rigidbody of object we pick up
-    private bool canDrop = true; //this is needed so we don't throw/drop object when rotating the object
-    private int LayerNumber; //layer index
 
-    //Reference to script which includes mouse movement of player (looking around)
-    //we want to disable the player looking around when rotating the object
-    //example below 
-    //MouseLookScript mouseLookScript;
+    [Header("Coger / lanzar")]
+    public float pickUpRange = 5f;
+    public float throwForce = 15f;
+
+    [Header("Suavizado de posición")]
+    [Tooltip("Más alto = más lento y flotante.")]
+    public float positionSmoothTime = 0.12f;
+    [Tooltip("Velocidad máxima con la que puede seguir a la cámara.")]
+    public float maxFollowSpeed = 15f;
+    [Tooltip("Distancia máxima que puede quedarse por detrás de holdPos (evita que 'vuele' al girar rápido).")]
+    public float maxLag = 0.4f;
+
+    [Header("Rotación")]
+    [Tooltip("Más alto = sigue antes a la cámara.")]
+    public float rotationSmoothness = 8f;
+    public float rotationSensitivity = 3f;
+
+    [Header("Soltar")]
+    [Tooltip("Separación de la pared/suelo al soltar dentro de la geometría.")]
+    public float safeDropMargin = 0.3f;
+
+    private GameObject heldObj;
+    private Rigidbody heldObjRb;
+
+    private Transform[] heldTransforms;
+    private int[] originalLayers;
+    private bool originalKinematic;
+    private bool originalDetectCollisions;
+
+    private int holdLayer;
+    private Vector3 moveVelocity;
+    private Quaternion localRotation; // rotación del objeto relativa a holdPos
+
     void Start()
     {
-        LayerNumber = LayerMask.NameToLayer("holdLayer"); //if your holdLayer is named differently make sure to change this ""
-
-        //mouseLookScript = player.GetComponent<MouseLookScript>();
+        holdLayer = LayerMask.NameToLayer("holdLayer");
     }
+
     void Update()
     {
-        if (Input.GetKeyDown(KeyCode.E)) //change E to whichever key you want to press to pick up
+        if (Input.GetKeyDown(KeyCode.E))
         {
-            if (heldObj == null) //if currently not holding anything
-            {
-                //perform raycast to check if player is looking at object within pickuprange
-                RaycastHit hit;
-                if (Physics.Raycast(transform.position, transform.TransformDirection(Vector3.forward), out hit, pickUpRange))
-                {
-                    //make sure pickup tag is attached
-                    if (hit.transform.gameObject.tag == "canPickUp")
-                    {
-                        //pass in object hit into the PickUpObject function
-                        PickUpObject(hit.transform.gameObject);
-                    }
-                }
-            }
+            if (heldObj == null)
+                TryPickUp();
             else
-            {
-                if(canDrop == true)
-                {
-                    StopClipping(); //prevents object from clipping through walls
-                    DropObject();
-                }
-            }
+                Release();
         }
-        if (heldObj != null) //if player is holding object
-        {
-            MoveObject(); //keep object position at holdPos
-            RotateObject();
-            if (Input.GetKeyDown(KeyCode.Mouse0) && canDrop == true) //Mous0 (leftclick) is used to throw, change this if you want another button to be used)
-            {
-                StopClipping();
-                ThrowObject();
-            }
 
-        }
-    }
-    void PickUpObject(GameObject pickUpObj)
-    {
-        if (pickUpObj.GetComponent<Rigidbody>()) //make sure the object has a RigidBody
-        {
-            heldObj = pickUpObj; //assign heldObj to the object that was hit by the raycast (no longer == null)
-            heldObjRb = pickUpObj.GetComponent<Rigidbody>(); //assign Rigidbody
-            heldObjRb.isKinematic = true;
-            heldObjRb.transform.parent = holdPos.transform; //parent object to holdposition
-            heldObj.layer = LayerNumber; //change the object layer to the holdLayer
-            //make sure object doesnt collide with player, it can cause weird bugs
-            Physics.IgnoreCollision(heldObj.GetComponent<Collider>(), player.GetComponent<Collider>(), true);
-        }
-    }
-    void DropObject()
-    {
-        //re-enable collision with player
-        Physics.IgnoreCollision(heldObj.GetComponent<Collider>(), player.GetComponent<Collider>(), false);
-        heldObj.layer = 0; //object assigned back to default layer
-        heldObjRb.isKinematic = false;
-        heldObj.transform.parent = null; //unparent object
-        heldObj = null; //undefine game object
-    }
-    void MoveObject()
-    {
-        //keep object position the same as the holdPosition position
-        heldObj.transform.position = holdPos.transform.position;
-    }
-    void RotateObject()
-    {
-        if (Input.GetKey(KeyCode.R))//hold R key to rotate, change this to whatever key you want
-        {
-            canDrop = false; //make sure throwing can't occur during rotating
+        if (heldObj == null)
+            return;
 
-            //disable player being able to look around
-            //mouseLookScript.verticalSensitivity = 0f;
-            //mouseLookScript.lateralSensitivity = 0f;
-
-            float XaxisRotation = Input.GetAxis("Mouse X") * rotationSensitivity;
-            float YaxisRotation = Input.GetAxis("Mouse Y") * rotationSensitivity;
-            //rotate the object depending on mouse X-Y Axis
-            heldObj.transform.Rotate(Vector3.down, XaxisRotation);
-            heldObj.transform.Rotate(Vector3.right, YaxisRotation);
-        }
-        else
+        // Rotar con R + ratón (en el espacio de la cámara)
+        if (Input.GetKey(KeyCode.R))
         {
-            //re-enable player being able to look around
-            //mouseLookScript.verticalSensitivity = originalvalue;
-            //mouseLookScript.lateralSensitivity = originalvalue;
-            canDrop = true;
+            float x = Input.GetAxis("Mouse X") * rotationSensitivity;
+            float y = Input.GetAxis("Mouse Y") * rotationSensitivity;
+
+            localRotation =
+                Quaternion.AngleAxis(-x, Vector3.up) *
+                Quaternion.AngleAxis(y, Vector3.right) *
+                localRotation;
+        }
+
+        if (Input.GetKeyDown(KeyCode.Mouse0))
+            Throw();
+    }
+
+    // LateUpdate: se ejecuta DESPUÉS de que la cámara ya haya girado en Update
+    void LateUpdate()
+    {
+        if (heldObj == null)
+            return;
+
+        Transform t = heldObj.transform;
+
+        // Posición suave con velocidad limitada
+        Vector3 pos = Vector3.SmoothDamp(
+            t.position,
+            holdPos.position,
+            ref moveVelocity,
+            positionSmoothTime,
+            maxFollowSpeed
+        );
+
+        // Nunca se queda más lejos de holdPos que maxLag
+        Vector3 offset = pos - holdPos.position;
+        if (offset.magnitude > maxLag)
+            pos = holdPos.position + offset.normalized * maxLag;
+
+        t.position = pos;
+
+        // Rotación suave (independiente del framerate)
+        Quaternion targetRot = holdPos.rotation * localRotation;
+        float k = 1f - Mathf.Exp(-rotationSmoothness * Time.deltaTime);
+        t.rotation = Quaternion.Slerp(t.rotation, targetRot, k);
+    }
+
+    void TryPickUp()
+    {
+        RaycastHit hit;
+
+        if (Physics.Raycast(transform.position, transform.forward, out hit, pickUpRange))
+        {
+            if (hit.transform.CompareTag("canPickUp"))
+                PickUp(hit.transform.gameObject);
         }
     }
-    void ThrowObject()
+
+    void PickUp(GameObject obj)
     {
-        //same as drop function, but add force to object before undefining it
-        Physics.IgnoreCollision(heldObj.GetComponent<Collider>(), player.GetComponent<Collider>(), false);
-        heldObj.layer = 0;
-        heldObjRb.isKinematic = false;
-        heldObj.transform.parent = null;
-        heldObjRb.AddForce(transform.forward * throwForce);
+        Rigidbody rb = obj.GetComponent<Rigidbody>();
+        if (rb == null)
+            return;
+
+        heldObj = obj;
+        heldObjRb = rb;
+
+        // Guardamos estado original
+        originalKinematic = rb.isKinematic;
+        originalDetectCollisions = rb.detectCollisions;
+
+        heldTransforms = obj.GetComponentsInChildren<Transform>();
+        originalLayers = new int[heldTransforms.Length];
+        for (int i = 0; i < heldTransforms.Length; i++)
+            originalLayers[i] = heldTransforms[i].gameObject.layer;
+
+        // Sin física mientras lo llevas: no empuja nada ni atraviesa nada "de verdad"
+        rb.linearVelocity = Vector3.zero;           // Unity 6: linearVelocity
+        rb.angularVelocity = Vector3.zero;
+        rb.isKinematic = true;
+        rb.detectCollisions = false;
+
+        // Capa que solo ve la cámara Overlay
+        if (holdLayer >= 0)
+            foreach (Transform tr in heldTransforms)
+                tr.gameObject.layer = holdLayer;
+
+        localRotation = Quaternion.Inverse(holdPos.rotation) * obj.transform.rotation;
+        moveVelocity = Vector3.zero;
+    }
+
+    void Release()
+    {
+        if (heldObj == null)
+            return;
+
+        // Como se ve por encima de todo, puede estar "dentro" de una pared o del suelo.
+        // Lo colocamos en un punto seguro antes de devolverle la física.
+        PlaceSafely();
+
+        // Restaurar capas
+        for (int i = 0; i < heldTransforms.Length; i++)
+            if (heldTransforms[i] != null)
+                heldTransforms[i].gameObject.layer = originalLayers[i];
+
+        heldObjRb.isKinematic = originalKinematic;
+        heldObjRb.detectCollisions = originalDetectCollisions;
+
         heldObj = null;
+        heldObjRb = null;
+        heldTransforms = null;
+        originalLayers = null;
     }
-    void StopClipping() //function only called when dropping/throwing
+
+    void Throw()
     {
-        var clipRange = Vector3.Distance(heldObj.transform.position, transform.position); //distance from holdPos to the camera
-        //have to use RaycastAll as object blocks raycast in center screen
-        //RaycastAll returns array of all colliders hit within the cliprange
-        RaycastHit[] hits;
-        hits = Physics.RaycastAll(transform.position, transform.TransformDirection(Vector3.forward), clipRange);
-        //if the array length is greater than 1, meaning it has hit more than just the object we are carrying
-        if (hits.Length > 1)
+        Rigidbody rb = heldObjRb;
+        Release();
+
+        if (rb != null)
+            rb.AddForce(transform.forward * throwForce, ForceMode.VelocityChange);
+    }
+
+    void PlaceSafely()
+    {
+        int mask = ~0;
+        if (holdLayer >= 0)
+            mask = ~(1 << holdLayer);
+
+        Vector3 from = transform.position;
+        Vector3 to = heldObj.transform.position;
+
+        RaycastHit hit;
+        if (Physics.Linecast(from, to, out hit, mask, QueryTriggerInteraction.Ignore))
         {
-            //change object position to camera position 
-            heldObj.transform.position = transform.position + new Vector3(0f, -0.5f, 0f); //offset slightly downward to stop object dropping above player 
-            //if your player is small, change the -0.5f to a smaller number (in magnitude) ie: -0.1f
+            heldObj.transform.position = hit.point + hit.normal * safeDropMargin;
         }
     }
 }
