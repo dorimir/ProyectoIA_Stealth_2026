@@ -106,3 +106,6 @@ InitTestScene*.unity*
 
 # Auto-generated cache in Assets folder
 /[Aa]ssets/[Ss]ceneDependencyCache*
+*.asset
+DinoEscapeSlop/UserSettings/Layouts/default-6000.dwlt
+DinoEscapeSlop/UserSettings/Layouts/default-6000.dwlt
