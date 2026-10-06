@@ -18,6 +18,16 @@ public class Flockingstate : IState
 
     public void Update()
     {
+
+        if (ai.Player != null)
+        {
+            float distToPlayer = Vector3.Distance(ai.transform.position, ai.Player.position);
+            if (distToPlayer <= ai.DetectionRange)
+            {
+                ai.StateMachine.ChangeState(ai.IsPrey ? ai.FleeState : ai.ChaseState);
+                return;
+            }
+        }
         
         if (ai.Movement.HasReachedDestination)
         {
@@ -74,7 +84,7 @@ public class Flockingstate : IState
 
             float score = 0f;
 
-            // 1. SEPARACIÓN
+            // 1. SEPARACIï¿½N
             foreach (var ally in allies)
             {
                 float distToAlly = Vector3.Distance(neighborNode.transform.position, ally.position);
@@ -84,11 +94,11 @@ public class Flockingstate : IState
                 }
             }
 
-            // 2. COHESIÓN
+            // 2. COHESIï¿½N
             float distToCenter = Vector3.Distance(neighborNode.transform.position, centerOfMass);
             score -= distToCenter * ai.CohesionWeight;
 
-            // 3. ALINEACIÓN
+            // 3. ALINEACIï¿½N
             Vector3 directionToNode = (neighborNode.transform.position - currentNode.transform.position).normalized;
             float alignmentDot = Vector3.Dot(directionToNode, averageForward);
             score += alignmentDot * ai.AlignmentWeight;
@@ -103,17 +113,17 @@ public class Flockingstate : IState
         return bestNode;
     }
 
-    // --- MÉTODO PARA BUSCAR ALIADOS POR TAG EN UN RADIO ---
+    // --- Mï¿½TODO PARA BUSCAR ALIADOS POR TAG EN UN RADIO ---
     private List<Transform> GetNearbyAlliesByTag(string tag, float radius)
     {
         List<Transform> alliesFound = new List<Transform>();
 
-        // Busca todas las colisiones físicas en la esfera de percepción
+        // Busca todas las colisiones fï¿½sicas en la esfera de percepciï¿½n
         Collider[] hitColliders = Physics.OverlapSphere(ai.transform.position, radius);
 
         foreach (var hitCollider in hitColliders)
         {
-            // Comprobar que sea un enemigo Y que no se detecte a sí mismo
+            // Comprobar que sea un enemigo Y que no se detecte a sï¿½ mismo
             if (hitCollider.CompareTag(tag) && hitCollider.gameObject != ai.gameObject)
             {
                 alliesFound.Add(hitCollider.transform);
