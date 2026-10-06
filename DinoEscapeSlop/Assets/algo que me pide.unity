@@ -437,6 +437,17 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyMovement
   speed: 5
+  patrolNodes:
+  - {fileID: 587958021}
+  - {fileID: 1660040630}
+  - {fileID: 1729369222}
+  - {fileID: 941076125}
+  - {fileID: 579845041}
+  - {fileID: 856066800}
+  - {fileID: 1843220560}
+  - {fileID: 941193742}
+  - {fileID: 1062199034}
+  - {fileID: 1973281776}
 --- !u!65 &713400786
 BoxCollider:
   m_ObjectHideFlags: 0
