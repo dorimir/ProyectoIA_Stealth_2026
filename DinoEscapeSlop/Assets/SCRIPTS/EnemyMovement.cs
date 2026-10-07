@@ -19,7 +19,9 @@ public class EnemyMovement : MonoBehaviour
     void Start()
     {
         pathfinding = FindObjectOfType<AStarPathfinding>();
-        GoToRandomNode();
+
+        // Marcamos true al inicio para que el FlockingState elija el primer destino en su primer frame
+        HasReachedDestination = true;
     }
 
     void Update()
@@ -36,13 +38,12 @@ public class EnemyMovement : MonoBehaviour
         if (currentPath != null && currentPath.Count > 0)
         {
             targetIndex = 0;
-            HasReachedDestination = false;
+            HasReachedDestination = false; // Inicia el trayecto
         }
         else
         {
-            // Si el nodo elegido por azar dio un camino invalido/nulo, reintenta buscar otro
+            // Si A* falla o no hay camino, queda disponible para que el estado lo vuelva a intentar
             HasReachedDestination = true;
-            Invoke("GoToRandomNode", 0.5f);
         }
     }
 
@@ -64,9 +65,7 @@ public class EnemyMovement : MonoBehaviour
             if (targetIndex >= currentPath.Count)
             {
                 currentPath = null;
-                HasReachedDestination = true; // Notificamos que hemos llegado al destino
-
-                Invoke("GoToRandomNode", 0.5f);
+                HasReachedDestination = true; // Avisa a Flockingstate para que elija el siguiente nodo
             }
         }
     }
@@ -78,7 +77,6 @@ public class EnemyMovement : MonoBehaviour
     {
         if (patrolNodes != null && patrolNodes.Count > 0)
         {
-            // Elige un nodo al azar solo dentro de la lista asociada
             Node randomNode = patrolNodes[Random.Range(0, patrolNodes.Count)];
 
             if (randomNode != null)

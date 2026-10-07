@@ -5,7 +5,6 @@ public class Flockingstate : IState
 {
     private EnemyAI ai;
 
-    // Constructor que recibe el controlador principal EnemyAI
     public Flockingstate(EnemyAI ai)
     {
         this.ai = ai;
@@ -13,57 +12,61 @@ public class Flockingstate : IState
 
     public void Enter()
     {
-        Debug.Log($"{ai.gameObject.name} ha entrado en estado: FLOCKING");
+        Debug.Log($"{ai.gameObject.name} entra en FLOCKING (¿Es Líder?: {ai.isLeader})");
+
+        if (ai.Movement.HasReachedDestination)
+        {
+            EvaluateAndMove();
+        }
     }
 
     public void Update()
     {
-        
         if (ai.Movement.HasReachedDestination)
         {
-            Node nextNode = ChooseNextFlockNode();
-
-            if (nextNode != null)
-            {
-                ai.Movement.MoveTo(nextNode.transform.position);
-            }
-            else
-            {
-                ai.Movement.GoToRandomNode();
-            }
+            EvaluateAndMove();
         }
     }
 
     public void Exit()
     {
-        // Limpieza opcional al salir del estado de Flocking
+        // Limpieza opcional
     }
 
-
-
-    private Node ChooseNextFlockNode()
+    private void EvaluateAndMove()
     {
-        if (ai.Pathfinding == null) return null;
+        // --- CASO 1: EL ENEMIGO ES EL LÍDER ---
+        if (ai.isLeader)
+        {
+            // El líder patrulla libremente por su lista de nodos
+            ai.Movement.GoToRandomNode();
+            return;
+        }
+
+        // --- CASO 2: EL ENEMIGO ES UN SEGUIDOR ---
+        Node nextNode = ChooseFollowerNode();
+
+        if (nextNode != null)
+        {
+            ai.Movement.MoveTo(nextNode.transform.position);
+        }
+        else
+        {
+            // Si pierde al líder o no hay nodo válido, patrulla por su cuenta
+            ai.Movement.GoToRandomNode();
+        }
+    }
+
+    private Node ChooseFollowerNode()
+    {
+        if (ai.Pathfinding == null || ai.leaderTransform == null) return null;
 
         Node currentNode = ai.Pathfinding.GetClosestNode(ai.transform.position);
         if (currentNode == null || currentNode.neighbors == null || currentNode.neighbors.Count == 0)
             return null;
 
-        // --- AHORA BUSCAMOS ALlADOS POR ETIQUETA ---
-        List<Transform> allies = GetNearbyAlliesByTag("Enemy", ai.FlockRadius);
-        if (allies.Count == 0) return null; 
-
-        Vector3 centerOfMass = Vector3.zero;
-        Vector3 averageForward = Vector3.zero;
-
-        foreach (var ally in allies)
-        {
-            centerOfMass += ally.position;
-            averageForward += ally.forward;
-        }
-
-        centerOfMass /= allies.Count;
-        averageForward = averageForward.normalized;
+        // Buscar a otros seguidores cercanos para aplicar SEPARACIÓN
+        List<Transform> nearbyAllies = GetNearbyAlliesByTag("Enemy", ai.FlockRadius);
 
         Node bestNode = null;
         float highestScore = float.MinValue;
@@ -74,24 +77,23 @@ public class Flockingstate : IState
 
             float score = 0f;
 
-            // 1. SEPARACIÓN
-            foreach (var ally in allies)
+            // 1. ATRACCIÓN AL LÍDER (A menor distancia del líder, mayor puntuación)
+            float distToLeader = Vector3.Distance(neighborNode.transform.position, ai.leaderTransform.position);
+            score -= distToLeader * ai.LeaderFollowWeight;
+
+            // 2. SEPARACIÓN DE OTROS SEGUIDORES (Evitar amontonamientos)
+            foreach (var ally in nearbyAllies)
             {
+                // Ignoramos al propio líder si está en la lista de aliados para no repelerlo
+                if (ally == ai.leaderTransform) continue;
+
                 float distToAlly = Vector3.Distance(neighborNode.transform.position, ally.position);
                 if (distToAlly < ai.TooCloseRadius)
                 {
+                    // Penalizamos fuertemente si el nodo está demasiado cerca de un compañero
                     score -= (ai.TooCloseRadius - distToAlly) * ai.SeparationWeight;
                 }
             }
-
-            // 2. COHESIÓN
-            float distToCenter = Vector3.Distance(neighborNode.transform.position, centerOfMass);
-            score -= distToCenter * ai.CohesionWeight;
-
-            // 3. ALINEACIÓN
-            Vector3 directionToNode = (neighborNode.transform.position - currentNode.transform.position).normalized;
-            float alignmentDot = Vector3.Dot(directionToNode, averageForward);
-            score += alignmentDot * ai.AlignmentWeight;
 
             if (score > highestScore)
             {
@@ -103,17 +105,13 @@ public class Flockingstate : IState
         return bestNode;
     }
 
-    // --- MÉTODO PARA BUSCAR ALIADOS POR TAG EN UN RADIO ---
     private List<Transform> GetNearbyAlliesByTag(string tag, float radius)
     {
         List<Transform> alliesFound = new List<Transform>();
-
-        // Busca todas las colisiones físicas en la esfera de percepción
         Collider[] hitColliders = Physics.OverlapSphere(ai.transform.position, radius);
 
         foreach (var hitCollider in hitColliders)
         {
-            // Comprobar que sea un enemigo Y que no se detecte a sí mismo
             if (hitCollider.CompareTag(tag) && hitCollider.gameObject != ai.gameObject)
             {
                 alliesFound.Add(hitCollider.transform);
