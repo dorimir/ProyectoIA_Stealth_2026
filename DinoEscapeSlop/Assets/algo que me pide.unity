@@ -608,7 +608,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyMovement
   speed: 5
-  formationSpacing: 1.2
   patrolNodes:
   - {fileID: 587958021}
   - {fileID: 1660040630}

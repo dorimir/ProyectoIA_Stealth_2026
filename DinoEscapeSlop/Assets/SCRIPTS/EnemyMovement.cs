@@ -10,10 +10,10 @@ public class EnemyMovement : MonoBehaviour
     public float speed = 5f;
 
     [Header("Nodos del Enemigo")]
-    [Tooltip("Asigna aquí en el Inspector únicamente los nodos entre los que quieres que se mueva este enemigo.")]
+    [Tooltip("Asigna aquÃ­ en el Inspector Ãºnicamente los nodos entre los que quieres que se mueva este enemigo.")]
     public List<Node> patrolNodes = new List<Node>();
 
-    // Indica a la máquina de estados si el enemigo completó su trayecto
+    // Indica a la mÃ¡quina de estados si el enemigo completÃ³ su trayecto
     public bool HasReachedDestination { get; private set; }
 
     void Start()
@@ -38,12 +38,13 @@ public class EnemyMovement : MonoBehaviour
         if (currentPath != null && currentPath.Count > 0)
         {
             targetIndex = 0;
-            HasReachedDestination = false; // Inicia el trayecto
+            HasReachedDestination = false;
         }
         else
         {
-            // Si A* falla o no hay camino, queda disponible para que el estado lo vuelva a intentar
+            // Si el nodo elegido por azar dio un camino invalido/nulo, reintenta buscar otro
             HasReachedDestination = true;
+            Invoke("GoToRandomNode", 0.5f);
         }
     }
 
@@ -56,27 +57,30 @@ public class EnemyMovement : MonoBehaviour
         // Mover hacia el nodo waypoint actual
         transform.position = Vector3.MoveTowards(transform.position, currentWaypoint, speed * Time.deltaTime);
 
-        // Comprobación de llegada al waypoint actual
+        // ComprobaciÃ³n de llegada al waypoint actual
         if (Vector3.Distance(transform.position, currentWaypoint) < 0.2f)
         {
             targetIndex++;
 
-            // ¿Llegamos al final del camino completo?
+            // Â¿Llegamos al final del camino completo?
             if (targetIndex >= currentPath.Count)
             {
                 currentPath = null;
-                HasReachedDestination = true; // Avisa a Flockingstate para que elija el siguiente nodo
+                HasReachedDestination = true; // Notificamos que hemos llegado al destino
+
+                Invoke("GoToRandomNode", 0.5f);
             }
         }
     }
 
     /// <summary>
-    /// Selecciona un nodo aleatorio ÚNICAMENTE de la lista de nodos asignada en el Inspector.
+    /// Selecciona un nodo aleatorio ÃšNICAMENTE de la lista de nodos asignada en el Inspector.
     /// </summary>
     public void GoToRandomNode()
     {
         if (patrolNodes != null && patrolNodes.Count > 0)
         {
+            // Elige un nodo al azar solo dentro de la lista asociada
             Node randomNode = patrolNodes[Random.Range(0, patrolNodes.Count)];
 
             if (randomNode != null)

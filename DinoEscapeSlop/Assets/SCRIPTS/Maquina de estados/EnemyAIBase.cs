@@ -1,67 +1,66 @@
 using UnityEngine;
 
-[RequireComponent(typeof(EnemyMovement))]
 public class EnemyAI : MonoBehaviour
 {
     [Header("Referencias de Componentes")]
     public EnemyMovement Movement { get; private set; }
     public AStarPathfinding Pathfinding { get; private set; }
 
-    [Header("Rol en el Flocking")]
-    [Tooltip("Marca esta casilla solo en el enemigo que actuará como Líder de la manada.")]
-    public bool isLeader = false;
+    [Header("Jugador")]
+    public Transform Player;
 
-    [Tooltip("Si NO es líder, asigna aquí al enemigo líder al que debe seguir.")]
-    public Transform leaderTransform;
+    [Header("ConfiguraciÃ³n de Flee")]
+    public bool IsPrey = false;        // true = huye del jugador, false = lo persigue
+    public float SafeRange = 22f;      // distancia a la que deja de huir
 
-    [Header("Configuración de Flocking (Seguidores)")]
-    [Tooltip("Radio de detección para evitar colisiones con otros seguidores.")]
+    public FleeState FleeState { get; private set; }
+
+    [Header("ConfiguraciÃ³n de Chase")]
+    public float DetectionRange = 15f;
+    public float LoseRange = 25f;
+    public float AttackRange = 2.5f;
+
+    [Header("ConfiguraciÃ³n de Flocking")]
+    [Tooltip("Radio en el que busca aliados cerca")]
     public float FlockRadius = 10f;
 
-    [Tooltip("Distancia mínima de separación con otros enemigos.")]
+    [Tooltip("Distancia mÃ­nima para empezar a separarse de los aliados")]
     public float TooCloseRadius = 2.5f;
 
     [Header("Pesos del Flocking")]
-    [Tooltip("Fuerza con la que huye de otros seguidores si se acercan demasiado.")]
-    public float SeparationWeight = 4f;
+    public float SeparationWeight = 3f;
+    public float CohesionWeight = 1.5f;
+    public float AlignmentWeight = 1f;
 
-    [Tooltip("Fuerza con la que intenta acercarse al Líder.")]
-    public float LeaderFollowWeight = 3f;
-
-    // --- MÁQUINA DE ESTADOS Y ESTADOS ---
+    // MÃ¡quina y estados
     public StateMachine StateMachine { get; private set; }
     public Flockingstate FlockingState { get; private set; }
+    public ChaseState ChaseState { get; private set; }
 
     private void Awake()
     {
         Movement = GetComponent<EnemyMovement>();
         Pathfinding = GetComponent<AStarPathfinding>();
 
-        if (Pathfinding == null)
-        {
-            Pathfinding = FindObjectOfType<AStarPathfinding>();
-        }
-
         StateMachine = new StateMachine();
         FlockingState = new Flockingstate(this);
+        ChaseState = new ChaseState(this);
+        FleeState = new FleeState(this);
     }
 
     private void Start()
     {
+        if (Player == null)
+        {
+            GameObject p = GameObject.FindGameObjectWithTag("Player");
+            if (p != null) Player = p.transform;
+        }
+
         StateMachine.Initialize(FlockingState);
     }
 
     private void Update()
     {
         StateMachine.Update();
-    }
-
-    private void OnDrawGizmosSelected()
-    {
-        Gizmos.color = isLeader ? Color.green : Color.yellow;
-        Gizmos.DrawWireSphere(transform.position, FlockRadius);
-
-        Gizmos.color = Color.red;
-        Gizmos.DrawWireSphere(transform.position, TooCloseRadius);
     }
 }
