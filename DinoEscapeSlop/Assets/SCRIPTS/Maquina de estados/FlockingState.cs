@@ -22,6 +22,18 @@ public class Flockingstate : IState
 
     public void Update()
     {
+        // Transición a Chase / Flee si detecta al jugador
+        if (ai.Player != null)
+        {
+            float distToPlayer = Vector3.Distance(ai.transform.position, ai.Player.position);
+            if (distToPlayer <= ai.DetectionRange)
+            {
+                ai.StateMachine.ChangeState(ai.IsPrey ? (IState)ai.FleeState : (IState)ai.ChaseState);
+                return;
+            }
+        }
+
+        // ÚNICAMENTE evalúa un nuevo nodo cuando ha llegado por completo a su destino anterior
         if (ai.Movement.HasReachedDestination)
         {
             EvaluateAndMove();
@@ -38,7 +50,6 @@ public class Flockingstate : IState
         // --- CASO 1: EL ENEMIGO ES EL LÍDER ---
         if (ai.isLeader)
         {
-            // El líder patrulla libremente por su lista de nodos
             ai.Movement.GoToRandomNode();
             return;
         }
@@ -52,7 +63,6 @@ public class Flockingstate : IState
         }
         else
         {
-            // Si pierde al líder o no hay nodo válido, patrulla por su cuenta
             ai.Movement.GoToRandomNode();
         }
     }
@@ -65,7 +75,6 @@ public class Flockingstate : IState
         if (currentNode == null || currentNode.neighbors == null || currentNode.neighbors.Count == 0)
             return null;
 
-        // Buscar a otros seguidores cercanos para aplicar SEPARACIÓN
         List<Transform> nearbyAllies = GetNearbyAlliesByTag("Enemy", ai.FlockRadius);
 
         Node bestNode = null;
@@ -77,20 +86,18 @@ public class Flockingstate : IState
 
             float score = 0f;
 
-            // 1. ATRACCIÓN AL LÍDER (A menor distancia del líder, mayor puntuación)
+            // 1. ATRACCIÓN AL LÍDER
             float distToLeader = Vector3.Distance(neighborNode.transform.position, ai.leaderTransform.position);
             score -= distToLeader * ai.LeaderFollowWeight;
 
-            // 2. SEPARACIÓN DE OTROS SEGUIDORES (Evitar amontonamientos)
+            // 2. SEPARACIÓN DE OTROS SEGUIDORES
             foreach (var ally in nearbyAllies)
             {
-                // Ignoramos al propio líder si está en la lista de aliados para no repelerlo
                 if (ally == ai.leaderTransform) continue;
 
                 float distToAlly = Vector3.Distance(neighborNode.transform.position, ally.position);
                 if (distToAlly < ai.TooCloseRadius)
                 {
-                    // Penalizamos fuertemente si el nodo está demasiado cerca de un compañero
                     score -= (ai.TooCloseRadius - distToAlly) * ai.SeparationWeight;
                 }
             }

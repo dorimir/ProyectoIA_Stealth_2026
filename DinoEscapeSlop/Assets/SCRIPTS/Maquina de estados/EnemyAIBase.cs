@@ -9,6 +9,13 @@ public class EnemyAI : MonoBehaviour
     [Header("Jugador")]
     public Transform Player;
 
+    [Header("Configuración de Rol y Líder (FLOCKING)")]
+    [Tooltip("¿Este enemigo es el líder del grupo?")]
+    public bool isLeader = false;
+
+    [Tooltip("Transform del enemigo marcado como Líder (para los seguidores)")]
+    public Transform leaderTransform;
+
     [Header("Configuración de Flee")]
     public bool IsPrey = false;        // true = huye del jugador, false = lo persigue
     public float SafeRange = 22f;      // distancia a la que deja de huir
@@ -28,7 +35,12 @@ public class EnemyAI : MonoBehaviour
     public float TooCloseRadius = 2.5f;
 
     [Header("Pesos del Flocking")]
-    public float SeparationWeight = 3f;
+    [Tooltip("Prioridad para seguir al líder")]
+    public float LeaderFollowWeight = 3f;
+
+    [Tooltip("Prioridad para no amontonarse con compañeros")]
+    public float SeparationWeight = 1.5f;
+
     public float CohesionWeight = 1.5f;
     public float AlignmentWeight = 1f;
 
@@ -40,7 +52,7 @@ public class EnemyAI : MonoBehaviour
     private void Awake()
     {
         Movement = GetComponent<EnemyMovement>();
-        Pathfinding = GetComponent<AStarPathfinding>();
+        Pathfinding = FindObjectOfType<AStarPathfinding>();
 
         StateMachine = new StateMachine();
         FlockingState = new Flockingstate(this);
@@ -62,5 +74,30 @@ public class EnemyAI : MonoBehaviour
     private void Update()
     {
         StateMachine.Update();
+    }
+
+    /// <summary>
+    /// Gizmos para depuración del Flocking
+    /// </summary>
+    private void OnDrawGizmos()
+    {
+        if (isLeader)
+        {
+            Gizmos.color = Color.yellow;
+            Gizmos.DrawWireSphere(transform.position + Vector3.up * 2f, 0.4f);
+        }
+        else if (leaderTransform != null)
+        {
+            Gizmos.color = Color.green;
+            Gizmos.DrawLine(transform.position + Vector3.up * 0.5f, leaderTransform.position + Vector3.up * 0.5f);
+        }
+
+        // Radio de separación
+        Gizmos.color = new Color(1f, 0f, 0f, 0.8f);
+        Gizmos.DrawWireSphere(transform.position, TooCloseRadius);
+
+        // Radio de percepción de aliados
+        Gizmos.color = new Color(0f, 1f, 1f, 0.5f);
+        Gizmos.DrawWireSphere(transform.position, FlockRadius);
     }
 }
