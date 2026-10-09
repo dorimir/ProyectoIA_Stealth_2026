@@ -157,8 +157,8 @@ MonoBehaviour:
   leaderTransform: {fileID: 713400789}
   FlockRadius: 12
   TooCloseRadius: 6
-  SeparationWeight: 10
-  LeaderFollowWeight: 3
+  SeparationWeight: 4
+  LeaderFollowWeight: 6
 --- !u!114 &62212943
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -184,6 +184,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyMovement
   speed: 5
+  formationSpacing: 1.2
   patrolNodes:
   - {fileID: 587958021}
   - {fileID: 1660040630}
@@ -282,7 +283,7 @@ Transform:
   m_GameObject: {fileID: 62212941}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -8, y: 1.84, z: -7.5}
+  m_LocalPosition: {x: -10.8, y: 1.84, z: -10.7}
   m_LocalScale: {x: 2.0875149, y: 2.0875149, z: 2.0875149}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -607,6 +608,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyMovement
   speed: 5
+  formationSpacing: 1.2
   patrolNodes:
   - {fileID: 587958021}
   - {fileID: 1660040630}
@@ -705,7 +707,7 @@ Transform:
   m_GameObject: {fileID: 713400784}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -8.39, y: 1.84, z: 12.73}
+  m_LocalPosition: {x: -7, y: 1.84, z: -8.7}
   m_LocalScale: {x: 2.0875149, y: 2.0875149, z: 2.0875149}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -739,8 +741,8 @@ MonoBehaviour:
   leaderTransform: {fileID: 0}
   FlockRadius: 12
   TooCloseRadius: 6
-  SeparationWeight: 10
-  LeaderFollowWeight: 3
+  SeparationWeight: 4
+  LeaderFollowWeight: 6
 --- !u!1 &724013532
 GameObject:
   m_ObjectHideFlags: 0
@@ -1116,8 +1118,8 @@ MonoBehaviour:
   leaderTransform: {fileID: 713400789}
   FlockRadius: 12
   TooCloseRadius: 6
-  SeparationWeight: 10
-  LeaderFollowWeight: 3
+  SeparationWeight: 4
+  LeaderFollowWeight: 6
 --- !u!114 &1278415779
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1143,6 +1145,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyMovement
   speed: 5
+  formationSpacing: 1.2
   patrolNodes:
   - {fileID: 587958021}
   - {fileID: 1660040630}
@@ -1241,7 +1244,7 @@ Transform:
   m_GameObject: {fileID: 1278415777}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 17.9, y: 1.84, z: -2.7}
+  m_LocalPosition: {x: -6.9, y: 1.84, z: -12.4}
   m_LocalScale: {x: 2.0875149, y: 2.0875149, z: 2.0875149}
   m_ConstrainProportionsScale: 0
   m_Children: []
