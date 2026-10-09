@@ -2,6 +2,7 @@
 
 public class PickUpScript : MonoBehaviour
 {
+    [Header("Referencias")]
     public Transform holdPos;
 
     [Header("Coger / lanzar")]
@@ -9,6 +10,7 @@ public class PickUpScript : MonoBehaviour
     public float throwForce = 15f;
 
     [Header("Suavizado de posición")]
+    [Tooltip("Más alto = más lento y flotante.")]
     public float positionSmoothTime = 0.12f;
     [Tooltip("Velocidad máxima con la que puede seguir a la cámara.")]
     public float maxFollowSpeed = 15f;
@@ -54,6 +56,7 @@ public class PickUpScript : MonoBehaviour
         if (heldObj == null)
             return;
 
+        // Rotar con R + ratón (en el espacio de la cámara)
         if (Input.GetKey(KeyCode.R))
         {
             float x = Input.GetAxis("Mouse X") * rotationSensitivity;
@@ -77,6 +80,7 @@ public class PickUpScript : MonoBehaviour
 
         Transform t = heldObj.transform;
 
+        // Posición suave con velocidad limitada
         Vector3 pos = Vector3.SmoothDamp(
             t.position,
             holdPos.position,
@@ -92,7 +96,7 @@ public class PickUpScript : MonoBehaviour
 
         t.position = pos;
 
-        // Rotación suave
+        // Rotación suave (independiente del framerate)
         Quaternion targetRot = holdPos.rotation * localRotation;
         float k = 1f - Mathf.Exp(-rotationSmoothness * Time.deltaTime);
         t.rotation = Quaternion.Slerp(t.rotation, targetRot, k);
@@ -127,7 +131,8 @@ public class PickUpScript : MonoBehaviour
         for (int i = 0; i < heldTransforms.Length; i++)
             originalLayers[i] = heldTransforms[i].gameObject.layer;
 
-        rb.linearVelocity = Vector3.zero;       
+        // Sin física mientras lo llevas: no empuja nada ni atraviesa nada "de verdad"
+        rb.linearVelocity = Vector3.zero;           // Unity 6: linearVelocity
         rb.angularVelocity = Vector3.zero;
         rb.isKinematic = true;
         rb.detectCollisions = false;
