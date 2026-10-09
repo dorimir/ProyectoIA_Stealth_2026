@@ -10,18 +10,16 @@ public class EnemyMovement : MonoBehaviour
     public float speed = 5f;
 
     [Header("Nodos del Enemigo")]
-    [Tooltip("Asigna aquÃ­ en el Inspector Ãºnicamente los nodos entre los que quieres que se mueva este enemigo.")]
+    [Tooltip("Asigna aquí en el Inspector únicamente los nodos entre los que quieres que se mueva este enemigo.")]
     public List<Node> patrolNodes = new List<Node>();
 
-    // Indica a la mÃ¡quina de estados si el enemigo completÃ³ su trayecto
+    // Indica a la máquina de estados si el enemigo completó su trayecto
     public bool HasReachedDestination { get; private set; }
 
     void Start()
     {
         pathfinding = FindObjectOfType<AStarPathfinding>();
-
-        // Marcamos true al inicio para que el FlockingState elija el primer destino en su primer frame
-        HasReachedDestination = true;
+        GoToRandomNode();
     }
 
     void Update()
@@ -57,12 +55,12 @@ public class EnemyMovement : MonoBehaviour
         // Mover hacia el nodo waypoint actual
         transform.position = Vector3.MoveTowards(transform.position, currentWaypoint, speed * Time.deltaTime);
 
-        // ComprobaciÃ³n de llegada al waypoint actual
+        // Comprobación de llegada al waypoint actual
         if (Vector3.Distance(transform.position, currentWaypoint) < 0.2f)
         {
             targetIndex++;
 
-            // Â¿Llegamos al final del camino completo?
+            // ¿Llegamos al final del camino completo?
             if (targetIndex >= currentPath.Count)
             {
                 currentPath = null;
@@ -74,7 +72,7 @@ public class EnemyMovement : MonoBehaviour
     }
 
     /// <summary>
-    /// Selecciona un nodo aleatorio ÃšNICAMENTE de la lista de nodos asignada en el Inspector.
+    /// Selecciona un nodo aleatorio ÚNICAMENTE de la lista de nodos asignada en el Inspector.
     /// </summary>
     public void GoToRandomNode()
     {
